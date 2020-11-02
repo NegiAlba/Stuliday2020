@@ -2,34 +2,41 @@
 require 'includes/header.php';
 require 'includes/navbar.php';
 
-$pass_su = htmlspecialchars($_POST['password1_signup']);
-$repass_su = htmlspecialchars($_POST['password2_signup']);
-$email_su = htmlspecialchars($_POST['email_signup']);
+if (isset($_POST['submit_signup'])) {
+    $pass_su = htmlspecialchars($_POST['password1_signup']);
+    $repass_su = htmlspecialchars($_POST['password2_signup']);
+    $email_su = htmlspecialchars($_POST['email_signup']);
 
-$sql = "SELECT * FROM users WHERE email = '{$email_su}'";
-$res = $conn->query($sql);
-if (!($count = $res->fetchColumn())) {
-    if ($pass_su === $repass_su) {
-        try {
-            $pass_su = password_hash($pass_su, PASSWORD_DEFAULT);
-            $sth = $conn->prepare('INSERT INTO users (email,password) VALUES (:email, :password)');
-            $sth->bindValue('email', $email_su);
-            $sth->bindValue('password', $pass_su);
-            $sth->execute();
-            var_dump($sth);
-            echo " L'utilisateur a bien été enregistré !";
-        } catch (PDOException $e) {
-            echo 'Error'.$e->getMessage;
+    $sql = "SELECT * FROM users WHERE email = '{$email_su}'";
+    $res = $conn->query($sql);
+    if (!($res->fetchColumn())) {
+        if ($pass_su === $repass_su) {
+            try {
+                $pass_su = password_hash($pass_su, PASSWORD_DEFAULT);
+                $sth = $conn->prepare('INSERT INTO users (email,password) VALUES (:email, :password)');
+                $sth->bindValue('email', $email_su);
+                $sth->bindValue('password', $pass_su);
+                $sth->execute();
+                echo " L'utilisateur a bien été enregistré !";
+            } catch (PDOException $e) {
+                echo 'Error'.$e->getMessage;
+            }
         }
+    } elseif (0 != $res->fetchColumn()) {
+        echo '<div class="notification is-danger is-light">
+        <button class="delete"></button>
+        Cette adresse existe déja !
+    </div>';
     }
 }
-
 ?>
 
 <div class="container">
     <div class="columns">
         <div class="column">
-            <form action="signin.php" method="post">
+            <form
+                action="<?php $_SERVER['REQUEST_URI']; ?>"
+                method="post">
                 <div class="field">
                     <label class="label">Email</label>
                     <div class="control has-icons-left has-icons-right">
