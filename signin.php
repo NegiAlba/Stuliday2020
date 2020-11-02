@@ -2,14 +2,18 @@
 require 'includes/header.php';
 require 'includes/navbar.php';
 
-if (isset($_POST['submit_signup'])) {
+var_dump($_SESSION);
+
+if (!empty($_POST['submit_signup']) && !empty($_POST['email_signup']) && !empty($_POST['password1_signup'])) {
     $pass_su = htmlspecialchars($_POST['password1_signup']);
     $repass_su = htmlspecialchars($_POST['password2_signup']);
     $email_su = htmlspecialchars($_POST['email_signup']);
 
     $sql = "SELECT * FROM users WHERE email = '{$email_su}'";
     $res = $conn->query($sql);
-    if (!($res->fetchColumn())) {
+    $count = $res->fetchColumn();
+
+    if (!$count) {
         if ($pass_su === $repass_su) {
             try {
                 $pass_su = password_hash($pass_su, PASSWORD_DEFAULT);
@@ -19,14 +23,45 @@ if (isset($_POST['submit_signup'])) {
                 $sth->execute();
                 echo " L'utilisateur a bien été enregistré !";
             } catch (PDOException $e) {
-                echo 'Error'.$e->getMessage;
+                echo 'Error'.$e->getMessage();
             }
+        } else {
+            echo '<div class="notification is-danger is-light">
+            <button class="delete"></button>
+            Les mots de passe ne concordent pas !
+        </div>';
         }
-    } elseif (0 != $res->fetchColumn()) {
+    } elseif ($count > 0) {
         echo '<div class="notification is-danger is-light">
         <button class="delete"></button>
         Cette adresse existe déja !
     </div>';
+    }
+}
+if (!empty($_POST['submit_login']) && !empty($_POST['email_login']) && !empty($_POST['password_login'])) {
+    $pass_login = htmlspecialchars($_POST['password_login']);
+    $email_login = htmlspecialchars($_POST['email_login']);
+
+    $sql = "SELECT * FROM users WHERE email = '{$email_login}'";
+    $res = $conn->query($sql);
+    $user = $res->fetch(PDO::FETCH_ASSOC);
+    if ($user) {
+        $db_pass = $user['password'];
+        if (password_verify($pass_login, $db_pass)) {
+            $_SESSION['email'] = $user['email'];
+            $_SESSION['id'] = $user['id'];
+            header('Location: index.php');
+        } else {
+            echo '<div class="notification is-danger is-light">
+            <button class="delete"></button>
+            Mot de passe erroné
+        </div>';
+        }
+    } else {
+        echo '<div class="notification is-danger is-light">
+            <button class="delete"></button>
+            Cet utilisateur n\'existe pas
+        </div>';
     }
 }
 ?>
@@ -40,7 +75,8 @@ if (isset($_POST['submit_signup'])) {
                 <div class="field">
                     <label class="label">Email</label>
                     <div class="control has-icons-left has-icons-right">
-                        <input class="input" type="email" placeholder="Type your e-mail" value="" name="email_signup">
+                        <input class="input" type="email" placeholder="Type your e-mail" value="" name="email_signup"
+                            required>
                         <span class="icon is-small is-left">
                             <i class="fas fa-envelope"></i>
                         </span>
@@ -53,7 +89,7 @@ if (isset($_POST['submit_signup'])) {
                     <label class="label">Password</label>
                     <div class="control has-icons-left has-icons-right">
                         <input class="input" type="password" placeholder="Choose a password" value=""
-                            name="password1_signup">
+                            name="password1_signup" required>
                         <span class="icon is-small is-left">
                             <i class="fas fa-envelope"></i>
                         </span>
@@ -66,7 +102,7 @@ if (isset($_POST['submit_signup'])) {
                     <label class="label">Re-enter your password</label>
                     <div class="control has-icons-left has-icons-right">
                         <input class="input" type="password" placeholder="Re-enter your password" value=""
-                            name="password2_signup">
+                            name="password2_signup" required>
                         <span class="icon is-small is-left">
                             <i class="fas fa-envelope"></i>
                         </span>
@@ -79,7 +115,7 @@ if (isset($_POST['submit_signup'])) {
                 <div class="field">
                     <div class="control">
                         <label class="checkbox">
-                            <input type="checkbox">
+                            <input type="checkbox" required>
                             I agree to the <a href="#">terms and conditions</a>
                         </label>
                     </div>
@@ -94,90 +130,41 @@ if (isset($_POST['submit_signup'])) {
             </form>
         </div>
         <div class="column">
-            <div class="field">
-                <label class="label">Name</label>
-                <div class="control">
-                    <input class="input" type="text" placeholder="Text input">
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">Username</label>
-                <div class="control has-icons-left has-icons-right">
-                    <input class="input is-success" type="text" placeholder="Text input" value="bulma">
-                    <span class="icon is-small is-left">
-                        <i class="fas fa-user"></i>
-                    </span>
-                    <span class="icon is-small is-right">
-                        <i class="fas fa-check"></i>
-                    </span>
-                </div>
-                <p class="help is-success">This username is available</p>
-            </div>
-
-            <div class="field">
-                <label class="label">Email</label>
-                <div class="control has-icons-left has-icons-right">
-                    <input class="input is-danger" type="email" placeholder="Email input" value="hello@">
-                    <span class="icon is-small is-left">
-                        <i class="fas fa-envelope"></i>
-                    </span>
-                    <span class="icon is-small is-right">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </span>
-                </div>
-                <p class="help is-danger">This email is invalid</p>
-            </div>
-
-            <div class="field">
-                <label class="label">Subject</label>
-                <div class="control">
-                    <div class="select">
-                        <select>
-                            <option>Select dropdown</option>
-                            <option>With options</option>
-                        </select>
+            <form
+                action="<?php $_SERVER['REQUEST_URI']; ?>"
+                method="post">
+                <div class="field">
+                    <label class="label">Email</label>
+                    <div class="control has-icons-left has-icons-right">
+                        <input class="input" type="email" placeholder="Type your e-mail" value="" name="email_login"
+                            required>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <span class="icon is-small is-right">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </span>
                     </div>
                 </div>
-            </div>
-
-            <div class="field">
-                <label class="label">Message</label>
-                <div class="control">
-                    <textarea class="textarea" placeholder="Textarea"></textarea>
+                <div class="field">
+                    <label class="label">Password</label>
+                    <div class="control has-icons-left has-icons-right">
+                        <input class="input" type="password" placeholder="Choose a password" value=""
+                            name="password_login" required>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <span class="icon is-small is-right">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </span>
+                    </div>
                 </div>
-            </div>
-
-            <div class="field">
-                <div class="control">
-                    <label class="checkbox">
-                        <input type="checkbox">
-                        I agree to the <a href="#">terms and conditions</a>
-                    </label>
+                <div class="field is-grouped">
+                    <div class="control">
+                        <input type="submit" value="Login !" name="submit_login" class="button is-primary">
+                    </div>
                 </div>
-            </div>
-
-            <div class="field">
-                <div class="control">
-                    <label class="radio">
-                        <input type="radio" name="question">
-                        Yes
-                    </label>
-                    <label class="radio">
-                        <input type="radio" name="question">
-                        No
-                    </label>
-                </div>
-            </div>
-
-            <div class="field is-grouped">
-                <div class="control">
-                    <button class="button is-link">Submit</button>
-                </div>
-                <div class="control">
-                    <button class="button is-link is-light">Cancel</button>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 </div>
