@@ -2,8 +2,6 @@
 require 'includes/header.php';
 require 'includes/navbar.php';
 
-var_dump($_SESSION);
-
 if (!empty($_POST['submit_signup']) && !empty($_POST['email_signup']) && !empty($_POST['password1_signup'])) {
     $pass_su = htmlspecialchars($_POST['password1_signup']);
     $repass_su = htmlspecialchars($_POST['password2_signup']);
